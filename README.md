@@ -87,13 +87,6 @@ Presented at the **International Conference on Smart Systems for Applications in
 
 ---
 
-## 👥 Authors
-
-- **Sumanth Ponugupati**  
-- **Teja Sai Yallamelli**
-
----
-
 ## 📞 Contact
 
 For inquiries or collaboration:  
