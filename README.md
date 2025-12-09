@@ -1,109 +1,102 @@
-# SafeRoute: Multi-Modal Optimization for Crisis Management and Evacuation
+# Smart Disaster Management – Run Guide
 
-SafeRoute is an integrated disaster management system designed to enhance response efficiency during crises like floods and earthquakes. By leveraging machine learning, geospatial technologies, and multi-modal route optimization, the project provides real-time safe route guidance, predicts disaster severity, and facilitates efficient resource allocation to minimize casualties and damages.
+Python project with two entry points:
+- `main.py`/`hello.py`: FastAPI service that serves earthquake and flood predictions using pre-trained models (`Earthquake_Model.pkl`, `Flood_Model.pkl`).
+- `app1.py`: Streamlit prototype for interactive prediction and map display (expects extra CSV datasets that are not bundled).
 
-## 🚀 Objective
+## Project structure
+- `main.py`, `hello.py` – FastAPI APIs for predictions.
+- `earthquake.py` – training script that fits models and writes `Earthquake_Model.pkl` and `Flood_Model.pkl`.
+- `app1.py` – Streamlit UI (needs `earthquake_prediction_data.csv` and `flood_prediction_data.csv`, not in repo).
+- `*.pkl`, `*.csv` – model artifacts and sample data used by the API/training.
 
-The primary goal of this project is to create a unified solution for disaster management that:
-- **Predicts** the impact of floods and earthquakes using trained machine learning models.
-- **Optimizes** evacuation and supply routes using a multi-modal approach (roadways, airways, waterways).
-- **Provides** a user-friendly interface for civilians to report their location, receive alerts, and get safe route suggestions.
-- **Enhances** real-time decision-making for disaster response teams by allocating resources effectively.
+## Prerequisites
+- Python 3.10+ recommended.
+- Install dependencies:
+  - With a venv (PowerShell): `python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirements.txt`
+  - Or globally: `pip install -r requirements.txt`
 
-## ✨ Key Features
+## Running the FastAPI service
+1. Open a terminal in `project (2)/project`.
+2. Ensure model/data files sit in this folder:
+   - `Earthquake_Model.pkl`
+   - `Flood_Model.pkl`
+   - `encoded_flood_data_with_waterlevel.csv`
+3. Update the hard-coded absolute paths in `main.py` (and `hello.py` if you use it) so they are relative to the project folder, e.g. replace the current `joblib.load(...)` paths with:
+   ```python
+   BASE_DIR = Path(__file__).parent
+   earthquake_model = joblib.load(BASE_DIR / "Earthquake_Model.pkl")
+   flood_model = joblib.load(BASE_DIR / "Flood_Model.pkl")
+   flood_data_path = BASE_DIR / "encoded_flood_data_with_waterlevel.csv"
+   ```
+4. Start the server: `uvicorn main:app --reload --host 127.0.0.1 --port 8000`
+5. Test health: GET `http://127.0.0.1:8000/` should return a message.
 
-- **Dual Disaster Models:** Earthquake (92.60% accuracy) and Flood (91.88% accuracy).
-- **Multi-Modal Routing:** Uses A*, Dijkstra, and Floyd-Warshall algorithms.
-- **Real-Time Alerts:** Weather + GPS integration with dynamic safe zones.
-- **Interactive UI:** Map-based view, safe route display, and warnings.
-- **Resource Allocation:** Redistribution of supplies from low-risk to high-risk zones.
+### Sample request bodies
+- Earthquake (to `/prediction`):
+```json
+{
+  "data": {
+    "prediction_type": "earthquake",
+    "depth": 10.5,
+    "magType": "ml",
+    "nst": 25,
+    "gap": 45.0,
+    "dmin": 0.1,
+    "rms": 0.9,
+    "horizontalError": 1.2,
+    "depthError": 0.7,
+    "magError": 0.05,
+    "magNst": 15
+  }
+}
+```
+- Flood (to `/prediction`):
+```json
+{
+  "data": {
+    "prediction_type": "flood",
+    "latitude": 8.52,
+    "longitude": 76.94,
+    "daily_rainfall": 60,
+    "river_water_level": 6,
+    "soil_moisture_content": 35,
+    "elevation": 50,
+    "slope": 12,
+    "construction_activity_encoded": 1,
+    "population_density_x_encoded": 2,
+    "dams_reservoirs_encoded": 1,
+    "drainage_system_encoded": 1,
+    "population_density_y_encoded": 2,
+    "wind_speed": 20,
+    "agricultural_activity_encoded": 1
+  }
+}
+```
+Responses include predicted category/magnitude, precautions, and derived metrics.
 
----
+## Streamlit prototype (`app1.py`)
+1. Place the missing datasets `earthquake_prediction_data.csv` and `flood_prediction_data.csv` alongside the script (not provided here).
+2. Run: `streamlit run app1.py`
+3. Use the sidebar to choose Earthquake/Flood, enter features, and view the map for nearest safe camps (`earthquake_safe_camps.csv`, `flood_safe_camps.csv`).
 
-# 🖼️ Screenshots  
-(Add your screenshots in the placeholders below)
+## Training models
+- Script: `python earthquake.py`
+- Requires the CSVs `filtered_earthquake_india.csv` and `encoded_flood_data_with_waterlevel.csv` in the same folder.
+- Outputs updated `Earthquake_Model.pkl` and `Flood_Model.pkl`.
 
-### 🔹 Homepage  
-`![Homepage](screenshots/homepage.png)`
+## Notes & troubleshooting
+- If you see `FileNotFoundError`, verify file names/locations and adjust the paths in the scripts to be relative (see step 3 above).
+- If `scikit-learn` complains about pickle incompatibility, retrain with `earthquake.py` under your current Python/sklearn version.
+- CORS is open in the API (`allow_origins=["*"]`); tighten before production use.
 
-### 🔹 Disaster Prediction Interface  
-`![Prediction Interface](screenshots/prediction_interface.png)`
+## Screenshots
+Place your images in the repo (e.g., `docs/screenshots/`) and link them here. Suggested captions for the provided captures:
+- Contact form submission showing submitted name/number/lat/long/audio attachment.
+- <img width="948" height="675" alt="Screenshot 2024-12-04 152235" src="https://github.com/user-attachments/assets/cecbe78e-ffa8-4e17-85e7-ccbeba9d8024" />
+- Streamlit “Get In Touch” form with location buttons, recorder controls, and blank map.
+- <img width="280" height="429" alt="Screenshot 2025-03-16 231929" src="https://github.com/user-attachments/assets/9c44622c-4634-4d33-a8fe-198fedf9011b" />
+- Route map view with directions and markers to the nearest safe camp.
+- <img width="385" height="215" alt="Screenshot 2025-03-16 232049" src="https://github.com/user-attachments/assets/24ed03cc-f5a2-475a-ae3f-a512bb3c6e8a" />
 
-### 🔹 Safe Route Visualization (Map)  
-`![Safe Route](screenshots/safe_route.png)`
 
-### 🔹 Resource Allocation Dashboard  
-`![Resource Allocation](screenshots/resource_allocation.png)`
-
----
-
-## 📜 Publication
-
-Presented at the **International Conference on Smart Systems for Applications in Electrical Sciences (ICSSES-2025)**  
-**Venue:** Siddaganga Institute of Technology (SIT), Tumakuru  
-**Dates:** March 21–22, 2025  
-
-- **Paper Title:** *SafeRoute: Multi-Modal Optimization for Crisis Management and Evacuation*  
-- **Presented By:** Sumanth Ponugupati  
-
----
-
-## 🛠️ Tech Stack & Methodology
-
-- **Backend:** FastAPI  
-- **Machine Learning:** Python, Pandas, Scikit-learn  
-- **Geospatial Analysis:** OSMnx, Folium  
-- **Frontend:** HTML, CSS, JavaScript  
-- **Algorithms:** Logistic Regression, A*, Dijkstra, Floyd-Warshall  
-
----
-
-## ⚙️ Setup & Installation
-
-1. **Clone the repository**
-    ```bash
-    git clone https://github.com/your-username/your-repository-name.git
-    cd your-repository-name
-    ```
-
-2. **Create and activate a virtual environment**
-    ```bash
-    # Windows
-    python -m venv venv
-    .\venv\Scripts\activate
-
-    # macOS/Linux
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-3. **Install dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
----
-
-## ▶️ How to Run
-
-1. **Start the backend server**
-    ```bash
-    uvicorn main:app --reload
-    ```
-
-2. **Open the frontend**
-    - Launch `index.html` in a browser.
-
----
-
-## 👥 Authors
-
-- **Sumanth Ponugupati**  
-- **Teja Sai Yallamelli**
-
----
-
-## 📞 Contact
-
-For inquiries or collaboration:  
-📧 **bl.en.u4eac22079@bl.students.amrita.edu**
